@@ -6,47 +6,54 @@ A complete, production-ready, highly secure, and visually stunning Smart Parking
 
 ## 1. System Architecture
 
-```mermaid
-graph TD
-    User[Client Browser / Attendant Portal] -->|HTTP / HTTPS REST APIs| ExpressServer[Express.js API Gateway]
-    
-    subgraph Security Layer (Middlewares)
-        ExpressServer --> CORSMiddleware[CORS Guard]
-        CORSMiddleware --> InputSanitizer[Validation & Sanitization]
-        InputSanitizer --> JWTAccess[JWT Auth & RBAC Check]
-        JWTAccess --> ErrorBoundary[Global Error Boundary]
-      end
-      
-    subgraph Business Logic (Routes & Controllers)
-        JWTAccess --> AuthRouter[Auth Router]
-        JWTAccess --> CheckinRouter[Vehicle Check-In Router]
-        JWTAccess --> CheckoutRouter[Vehicle Check-Out Router]
-        JWTAccess --> PaymentRouter[Payment Settle Router]
-        JWTAccess --> CRUDRouters[CRUD Operators / Slots / Attendants]
-    end
+1. How It Works
 
-    subgraph Persistence Layer
-        AuthRouter --> DB[(MySQL Relational Database)]
-        CheckinRouter --> DB
-        CheckoutRouter --> DB
-        PaymentRouter --> DB
-        CRUDRouters --> DB
-    end
-```
+SmartPark Pro is a web-based parking management system that connects the frontend interface with a Node.js and Express.js backend.
 
----
+- User Interface: Users interact with the system through the web-based frontend.
+- Authentication: Users can securely log in using username and password authentication with JWT.
+- Parking Management: Administrators and attendants can manage parking areas, slots, and vehicle information.
+- Entry & Exit Management: The system records vehicle entry and exit times and calculates parking fees.
+- Payment Management: Parking payments and transaction records can be managed through the system.
+- Dashboard: Real-time parking information and system statistics are displayed through the dashboard.
+- Database: The application uses MySQL with an SQLite fallback for local/offline operation.
+- API Communication: The frontend communicates with the Express.js backend through REST APIs.
 
-## 2. Entity-Relationship Diagram (ERD)
+System Flow
 
-```mermaid
-erDiagram
-    Users ||--o| Parking_Attendants : "has profile details"
-    Parking_Areas ||--o{ Parking_Slots : "contains"
-    Vehicles ||--o{ Parking_Records : "parks"
-    Parking_Slots ||--o{ Parking_Records : "assigned to"
-    Users ||--o{ Parking_Records : "recorded check-in by"
-    Parking_Records ||--|| Payments : "settled by"
+User → Frontend → REST API → Node.js/Express Backend → Database → Response to User
 
+This architecture provides a simple, centralized, and scalable approach to managing parking operations.
+
+## 2.2. Database Structure
+
+The Smart Parking Management System uses a structured database to store and manage users, parking areas, slots, vehicles, parking records, attendants, and payment information.
+
+Main Entities
+
+- Users – Stores login credentials, roles, email addresses, and account status.
+- Parking Attendants – Stores attendant details such as name, phone number, address, and hire date.
+- Parking Areas – Stores parking area names, locations, slot counts, and pricing.
+- Parking Slots – Stores individual parking slots, their types, and current availability status.
+- Vehicles – Stores vehicle registration numbers, vehicle types, and owner information.
+- Parking Records – Records vehicle entry, exit, assigned slot, attendant, parking duration, and calculated fees.
+- Payments – Stores payment amounts, payment methods, transaction IDs, and payment dates.
+
+Entity Relationships
+
+- A User can be associated with a Parking Attendant.
+- A Parking Area can contain multiple Parking Slots.
+- A Vehicle can have multiple Parking Records over time.
+- A Parking Slot can be assigned to multiple parking records at different times.
+- A Parking Attendant manages parking entries and exits.
+- A Parking Record can have an associated Payment.
+- These relationships allow the system to track the complete parking lifecycle from vehicle entry to exit and payment.
+
+Database Flow
+
+User → Parking Area → Parking Slot → Vehicle → Parking Record → Payment
+
+The database structure is designed to maintain organized parking information while supporting efficient management and reporting.
     Users {
         int id PK "Auto Increment"
         string username UNIQUE "Login Username"

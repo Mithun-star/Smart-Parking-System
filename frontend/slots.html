@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parking Slots - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="glass-panel p-4">
+        
+        <!-- Header Controls -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+          <div>
+            <h5 class="fw-bold mb-1">Parking Bay Registry</h5>
+            <p class="text-secondary small mb-0">Configure slots categorization, live statuses, or run maintenance tasks.</p>
+          </div>
+          <button id="add-slot-btn" class="btn btn-primary d-none" data-bs-toggle="modal" data-bs-target="#slotModal" onclick="openAddSlotModal()">
+            <i class="fas fa-plus me-2"></i>Add Parking Slot
+          </button>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Search Slot Code</label>
+            <input type="text" id="filter-slot-number" class="form-control" placeholder="Search number...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Filter Area Block</label>
+            <select id="filter-slot-area" class="form-select">
+              <option value="">All Areas</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Filter Status</label>
+            <select id="filter-slot-status" class="form-select">
+              <option value="">All Statuses</option>
+              <option value="Available">Available</option>
+              <option value="Occupied">Occupied</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Data Table Container -->
+        <div class="table-responsive">
+          <div id="slots-table-loader"></div>
+          <table class="custom-table" id="slots-data-table">
+            <thead>
+              <tr>
+                <th>Slot Number</th>
+                <th>Parking Block</th>
+                <th>Vehicle Type</th>
+                <th>Hourly Rate</th>
+                <th>Live Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="slots-table-body">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Custom Pagination -->
+        <div class="custom-pagination">
+          <span class="text-secondary small me-auto" id="pagination-info">Showing -- to -- of -- entries</span>
+          <button class="page-btn" id="prev-page-btn" disabled><i class="fas fa-chevron-left"></i></button>
+          <div id="page-numbers-container" class="d-flex gap-1"></div>
+          <button class="page-btn" id="next-page-btn" disabled><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- CRUD Slot Modal (Admin additions & updates) -->
+  <div class="modal fade" id="slotModal" tabindex="-1" aria-labelledby="slotModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-panel text-white" style="border: 1px solid var(--border-color); background-color: var(--bg-secondary);">
+        <div class="modal-header border-bottom border-secondary border-opacity-15">
+          <h5 class="modal-title fw-bold" id="slotModalLabel">Configure Slot</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="slot-crud-form">
+          <input type="hidden" id="modal-slot-id">
+          <div class="modal-body row g-3">
+            
+            <div class="col-12" id="modal-area-container">
+              <label for="modal-slot-area" class="form-label">Parking Block Area <span class="text-danger">*</span></label>
+              <select id="modal-slot-area" class="form-select" required>
+                <option value="">Select Block...</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label for="modal-slot-number" class="form-label">Slot Code Number <span class="text-danger">*</span></label>
+              <input type="text" id="modal-slot-number" class="form-control" placeholder="e.g. A-11" required>
+            </div>
+
+            <div class="col-md-6">
+              <label for="modal-slot-type" class="form-label">Allowed Category <span class="text-danger">*</span></label>
+              <select id="modal-slot-type" class="form-select" required>
+                <option value="Four-Wheeler">Four-Wheeler</option>
+                <option value="Two-Wheeler">Two-Wheeler</option>
+                <option value="Heavy-Vehicle">Heavy-Vehicle</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label for="modal-slot-status" class="form-label">Slot Status <span class="text-danger">*</span></label>
+              <select id="modal-slot-status" class="form-select" required>
+                <option value="Available">Available</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Occupied" id="statusOccupiedOption" disabled>Occupied (Managed via check-in/out)</option>
+              </select>
+            </div>
+
+          </div>
+          <div class="modal-footer border-top border-secondary border-opacity-15">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    let allSlots = [];
+    let filteredSlots = [];
+    let areas = [];
+    let currentUser = {};
+
+    // Pagination variables
+    let currentPage = 1;
+    const entriesPerPage = 8;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        currentUser = JSON.parse(localStorage.getItem('parking_user') || '{}');
+        
+        // Show add button only for Admins
+        if (currentUser.role === 'Admin') {
+          document.getElementById('add-slot-btn').classList.remove('d-none');
+        }
+
+        initSlotsPanel();
+        setupFilters();
+      }, 400);
+    });
+
+    async function initSlotsPanel() {
+      const loader = document.getElementById('slots-table-loader');
+      showLoader(loader);
+
+      try {
+        // 1. Fetch areas for filter dropdowns & modal selects
+        const areasResponse = await apiRequest('/areas');
+        if (areasResponse.success) {
+          areas = areasResponse.data;
+          
+          const areaFilter = document.getElementById('filter-slot-area');
+          const areaModalSelect = document.getElementById('modal-slot-area');
+          
+          areas.forEach(area => {
+            areaFilter.innerHTML += `<option value="${area.id}">${area.name}</option>`;
+            areaModalSelect.innerHTML += `<option value="${area.id}">${area.name}</option>`;
+          });
+        }
+
+        // 2. Load slots list
+        await loadSlotsData();
+
+      } catch (err) {
+        console.error(err);
+        showToast('Error initializing slots dashboard panels.', 'error');
+      } finally {
+        loader.innerHTML = '';
+      }
+    }
+
+    async function loadSlotsData() {
+      try {
+        const response = await apiRequest('/slots');
+        if (response.success) {
+          allSlots = response.data;
+          applyFilters();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Connection error fetching slots list.', 'error');
+      }
+    }
+
+    function setupFilters() {
+      const numberInput = document.getElementById('filter-slot-number');
+      const areaSelect = document.getElementById('filter-slot-area');
+      const statusSelect = document.getElementById('filter-slot-status');
+
+      const triggerFilter = () => {
+        currentPage = 1;
+        applyFilters();
+      };
+
+      numberInput.addEventListener('input', triggerFilter);
+      areaSelect.addEventListener('change', triggerFilter);
+      statusSelect.addEventListener('change', triggerFilter);
+
+      // Pagination triggers
+      document.getElementById('prev-page-btn').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderSlotsTable();
+        }
+      });
+
+      document.getElementById('next-page-btn').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredSlots.length / entriesPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderSlotsTable();
+        }
+      });
+    }
+
+    function applyFilters() {
+      const term = document.getElementById('filter-slot-number').value.trim().toLowerCase();
+      const area = document.getElementById('filter-slot-area').value;
+      const status = document.getElementById('filter-slot-status').value;
+
+      filteredSlots = allSlots.filter(s => {
+        const matchNumber = s.slot_number.toLowerCase().includes(term);
+        const matchArea = !area || s.area_id == area;
+        const matchStatus = !status || s.status === status;
+        
+        return matchNumber && matchArea && matchStatus;
+      });
+
+      renderSlotsTable();
+    }
+
+    function renderSlotsTable() {
+      const body = document.getElementById('slots-table-body');
+      body.innerHTML = '';
+
+      if (filteredSlots.length === 0) {
+        body.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">No matching slots found.</td></tr>';
+        updatePaginationInfo(0, 0, 0);
+        return;
+      }
+
+      const totalItems = filteredSlots.length;
+      const totalPages = Math.ceil(totalItems / entriesPerPage);
+      
+      // Keep page in bounds
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+      
+      const startIndex = (currentPage - 1) * entriesPerPage;
+      const endIndex = Math.min(startIndex + entriesPerPage, totalItems);
+      
+      const pageEntries = filteredSlots.slice(startIndex, endIndex);
+
+      pageEntries.forEach(slot => {
+        let badgeClass = 'badge-available';
+        if (slot.status === 'Occupied') badgeClass = 'badge-occupied';
+        if (slot.status === 'Maintenance') badgeClass = 'badge-maintenance';
+
+        let actionButtons = '';
+        if (currentUser.role === 'Admin') {
+          // Full admin edits and deletes
+          actionButtons = `
+            <button onclick="openEditSlotModal(${slot.id})" class="btn btn-secondary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#slotModal" title="Edit Properties"><i class="fas fa-edit text-info"></i></button>
+            <button onclick="deleteSlot(${slot.id})" class="btn btn-secondary btn-sm" title="Remove Bay"><i class="fas fa-trash-alt text-danger"></i></button>
+          `;
+        } else {
+          // Attendant status triggers
+          let label = slot.status === 'Maintenance' ? 'Release' : 'Block';
+          let icon = slot.status === 'Maintenance' ? 'fa-check text-success' : 'fa-ban text-danger';
+          
+          if (slot.status !== 'Occupied') {
+            actionButtons = `
+              <button onclick="toggleSlotMaintenance(${slot.id}, '${slot.status}')" class="btn btn-secondary btn-sm" title="${label} maintenance toggle">
+                <i class="fas ${icon} me-1"></i> ${label}
+              </button>
+            `;
+          } else {
+            actionButtons = `<span class="small text-muted italic">Managed via exit</span>`;
+          }
+        }
+
+        body.innerHTML += `
+          <tr>
+            <td class="fw-bold text-white">${slot.slot_number}</td>
+            <td>${slot.area_name}</td>
+            <td>${slot.type}</td>
+            <td>₹${parseFloat(slot.base_price).toFixed(2)}/hr</td>
+            <td><span class="badge-status ${badgeClass}">${slot.status}</span></td>
+            <td class="text-end">${actionButtons}</td>
+          </tr>
+        `;
+      });
+
+      updatePaginationInfo(startIndex + 1, endIndex, totalItems);
+      renderPageNumbers(totalPages);
+    }
+
+    function updatePaginationInfo(start, end, total) {
+      document.getElementById('pagination-info').innerText = `Showing ${start} to ${end} of ${total} entries`;
+      document.getElementById('prev-page-btn').disabled = currentPage === 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= Math.ceil(total / entriesPerPage) || total === 0;
+    }
+
+    function renderPageNumbers(totalPages) {
+      const container = document.getElementById('page-numbers-container');
+      container.innerHTML = '';
+      
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${currentPage === i ? 'active' : ''}`;
+        btn.innerText = i;
+        btn.addEventListener('click', () => {
+          currentPage = i;
+          renderSlotsTable();
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    // Modal forms togglers
+    function openAddSlotModal() {
+      document.getElementById('slotModalLabel').innerText = 'Add New Parking Slot';
+      document.getElementById('slot-crud-form').reset();
+      document.getElementById('modal-slot-id').value = '';
+      
+      // Allow selecting area
+      document.getElementById('modal-area-container').classList.remove('d-none');
+      document.getElementById('modal-slot-area').required = true;
+      document.getElementById('statusOccupiedOption').disabled = true;
+    }
+
+    function openEditSlotModal(id) {
+      document.getElementById('slotModalLabel').innerText = 'Edit Parking Slot Configuration';
+      const slot = allSlots.find(s => s.id === id);
+      if (!slot) return;
+
+      document.getElementById('modal-slot-id').value = slot.id;
+      document.getElementById('modal-slot-number').value = slot.slot_number;
+      document.getElementById('modal-slot-type').value = slot.type;
+      document.getElementById('modal-slot-status').value = slot.status;
+
+      // Hide area select during edit (safest database key behavior)
+      document.getElementById('modal-area-container').classList.add('d-none');
+      document.getElementById('modal-slot-area').required = false;
+
+      // Disable/enable Occupied select safely
+      const occupiedOption = document.getElementById('statusOccupiedOption');
+      if (slot.status === 'Occupied') {
+        occupiedOption.disabled = false;
+      } else {
+        occupiedOption.disabled = true;
+      }
+    }
+
+    // Submit slot CRUD
+    document.getElementById('slot-crud-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const id = document.getElementById('modal-slot-id').value;
+      const area_id = document.getElementById('modal-slot-area').value;
+      const slot_number = document.getElementById('modal-slot-number').value;
+      const type = document.getElementById('modal-slot-type').value;
+      const status = document.getElementById('modal-slot-status').value;
+
+      try {
+        let response;
+        if (id) {
+          // Edit
+          response = await apiRequest(`/slots/${id}`, 'PUT', { slot_number, type, status });
+        } else {
+          // Add
+          response = await apiRequest('/slots', 'POST', { area_id: parseInt(area_id), slot_number, type, status });
+        }
+
+        if (response.success) {
+          showToast(response.message || 'Operation successful!', 'success');
+          
+          // Hide modal using standard bootstrap triggers
+          const modalInstance = bootstrap.Modal.getInstance(document.getElementById('slotModal'));
+          modalInstance.hide();
+          
+          loadSlotsData();
+        } else {
+          throw new Error(response.message || 'Saving slot failed');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'API rejected slot modifications.', 'error');
+      }
+    });
+
+    // Delete slot
+    async function deleteSlot(id) {
+      const slot = allSlots.find(s => s.id === id);
+      if (!slot) return;
+
+      if (confirm(`CAUTION: Deleting slot ${slot.slot_number} will delete all active records associated with it. Proceed?`)) {
+        try {
+          const response = await apiRequest(`/slots/${id}`, 'DELETE');
+          if (response.success) {
+            showToast(response.message || 'Slot deleted', 'success');
+            loadSlotsData();
+          } else {
+            throw new Error(response.message || 'Failed to delete');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || 'Slot deletion failed.', 'error');
+        }
+      }
+    }
+
+    // Quick toggle maintenance for attendants
+    async function toggleSlotMaintenance(id, currentStatus) {
+      const nextStatus = currentStatus === 'Maintenance' ? 'Available' : 'Maintenance';
+      try {
+        const response = await apiRequest(`/slots/${id}`, 'PUT', { status: nextStatus });
+        if (response.success) {
+          showToast(`Slot status changed to ${nextStatus}`, 'success');
+          loadSlotsData();
+        } else {
+          throw new Error(response.message || 'Status toggle failed');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Could not update slot status.', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

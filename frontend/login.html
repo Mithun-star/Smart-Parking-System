@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking - Login</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body class="login-bg">
+  <div class="glass-panel login-card text-center">
+    <div class="mb-4">
+      <i class="fas fa-parking fa-3x text-info mb-3"></i>
+      <h2 class="fw-bold mb-1">SmartPark Pro</h2>
+      <p class="text-secondary small">Parking Management & Enforcement Suite</p>
+    </div>
+    
+    <div id="login-alert-container"></div>
+
+    <form id="login-form">
+      <div class="mb-3 text-start">
+        <label for="username" class="form-label">Username</label>
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 border-secondary border-opacity-25 text-secondary">
+            <i class="fas fa-user"></i>
+          </span>
+          <input type="text" id="username" class="form-control border-start-0 border-secondary border-opacity-25" placeholder="Enter username" required autocomplete="username">
+        </div>
+      </div>
+      
+      <div class="mb-4 text-start">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0 border-secondary border-opacity-25 text-secondary">
+            <i class="fas fa-lock"></i>
+          </span>
+          <input type="password" id="password" class="form-control border-start-0 border-secondary border-opacity-25" placeholder="Enter password" required autocomplete="current-password">
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn btn-primary w-100 py-2.5">
+        <span id="btn-text">Authenticate</span>
+        <span id="btn-loader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+      </button>
+    </form>
+    
+    <div class="mt-4 border-top border-secondary border-opacity-10 pt-3">
+      <p class="text-muted small mb-0">Demo Credentials:</p>
+      <div class="d-flex justify-content-center gap-3 mt-1 small">
+        <span class="text-secondary">Admin: <code>admin</code> / <code>admin123</code></span>
+        <span class="text-secondary">Attendant: <code>attendant</code> / <code>attendant123</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Global API Helpers -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const submitBtn = document.getElementById('submit-btn');
+      const btnText = document.getElementById('btn-text');
+      const btnLoader = document.getElementById('btn-loader');
+      const alertContainer = document.getElementById('login-alert-container');
+      
+      // Loading state
+      submitBtn.disabled = true;
+      btnText.textContent = 'Verifying...';
+      btnLoader.classList.remove('d-none');
+      alertContainer.innerHTML = '';
+
+      try {
+        const response = await apiRequest('/login', 'POST', {
+          username: usernameInput.value,
+          password: passwordInput.value
+        });
+        
+        if (response.success && response.token) {
+          showToast(response.message || 'Login successful!', 'success');
+          
+          // Save JWT and User Info in client storage
+          localStorage.setItem('parking_jwt_token', response.token);
+          localStorage.setItem('parking_user', JSON.stringify(response.user));
+          
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+        } else {
+          throw new Error(response.message || 'Login failed.');
+        }
+      } catch (err) {
+        console.error(err);
+        submitBtn.disabled = false;
+        btnText.textContent = 'Authenticate';
+        btnLoader.classList.add('d-none');
+        
+        alertContainer.innerHTML = `
+          <div class="alert alert-danger border border-danger-subtle bg-danger-subtle bg-opacity-10 text-danger text-start py-2 px-3 small rounded" role="alert">
+            <i class="fas fa-exclamation-circle me-1"></i> ${err.message || 'Connecting to server failed.'}
+          </div>
+        `;
+        showToast(err.message || 'Login failed', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

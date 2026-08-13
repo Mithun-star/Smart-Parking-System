@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Check-Out - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="row g-4">
+        
+        <!-- Search checkout panel -->
+        <div class="col-lg-6">
+          <div class="glass-panel p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="fas fa-sign-out-alt text-warning me-2"></i>Checkout & Processing</h5>
+            <p class="text-secondary small mb-4">Search for an active vehicle check-in by entering the license plate number, selecting the slot number, or searching by record ID.</p>
+
+            <form id="checkout-search-form">
+              <div class="mb-4">
+                <label class="form-label">Search Identifier <span class="text-danger">*</span></label>
+                
+                <!-- Multi-selection radio buttons for flexibility -->
+                <div class="d-flex gap-3 mb-3 small">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="searchType" id="typePlate" value="plate" checked>
+                    <label class="form-check-label text-secondary" for="typePlate">License Plate</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="searchType" id="typeSlot" value="slot">
+                    <label class="form-check-label text-secondary" for="typeSlot">Occupied Slot</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="searchType" id="typeRecord" value="record">
+                    <label class="form-check-label text-secondary" for="typeRecord">Record ID</label>
+                  </div>
+                </div>
+
+                <!-- Plate Input Container -->
+                <div id="input-plate-container">
+                  <input type="text" id="search-plate" class="form-control text-uppercase" placeholder="e.g. DL3CAN1234">
+                </div>
+
+                <!-- Slot Selection Container -->
+                <div id="input-slot-container" class="d-none">
+                  <select id="search-slot" class="form-select">
+                    <option value="">Choose Occupied Slot...</option>
+                  </select>
+                </div>
+
+                <!-- Record ID Input Container -->
+                <div id="input-record-container" class="d-none">
+                  <input type="number" id="search-record" class="form-control" placeholder="e.g. 3">
+                </div>
+
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 py-2.5">
+                <i class="fas fa-calculator me-2"></i>Calculate Exit Charges
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Checkout Summary details card -->
+        <div class="col-lg-6">
+          <div class="glass-panel p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center" id="exit-result-container">
+            <div id="result-placeholder">
+              <i class="fas fa-file-invoice-dollar fa-4x text-muted opacity-25 mb-3"></i>
+              <h5 class="text-secondary fw-semibold">Charges Summary</h5>
+              <p class="text-muted small">Search and checkout a vehicle to view duration, charges, and settle payments.</p>
+            </div>
+
+            <div id="result-details" class="d-none w-100 text-start">
+              <div class="border border-secondary border-opacity-10 rounded p-4 mb-4" style="background: rgba(255,255,255,0.01);">
+                <div class="d-flex justify-content-between align-items-center pb-3 border-bottom border-secondary border-opacity-10 mb-3">
+                  <h6 class="fw-bold mb-0 text-white"><i class="fas fa-receipt me-2 text-info"></i>Charges Detail</h6>
+                  <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3">Pending Payment</span>
+                </div>
+
+                <div class="row g-3 small">
+                  <div class="col-6 text-secondary">Record ID:</div>
+                  <div class="col-6 text-end fw-bold text-white" id="out-record-id">--</div>
+
+                  <div class="col-6 text-secondary">License Plate:</div>
+                  <div class="col-6 text-end fw-bold text-white" id="out-plate">--</div>
+
+                  <div class="col-6 text-secondary">Vehicle Category:</div>
+                  <div class="col-6 text-end fw-bold text-white" id="out-type">--</div>
+
+                  <div class="col-6 text-secondary">Parking Area / Slot:</div>
+                  <div class="col-6 text-end fw-bold text-white" id="out-location">--</div>
+
+                  <div class="col-12"><hr class="border-secondary border-opacity-10 my-1"></div>
+
+                  <div class="col-6 text-secondary">Check-In:</div>
+                  <div class="col-6 text-end text-white" id="out-entry">--</div>
+
+                  <div class="col-6 text-secondary">Check-Out (Now):</div>
+                  <div class="col-6 text-end text-white" id="out-exit">--</div>
+
+                  <div class="col-6 text-secondary">Total Duration:</div>
+                  <div class="col-6 text-end fw-bold text-info" id="out-duration">--</div>
+
+                  <div class="col-6 text-secondary">Configured Hourly Rate:</div>
+                  <div class="col-6 text-end text-white" id="out-rate">--</div>
+
+                  <div class="col-12"><hr class="border-secondary border-opacity-10 my-1"></div>
+
+                  <div class="col-6 text-secondary fs-6 align-self-center">Total Fee Due:</div>
+                  <div class="col-6 text-end fw-extrabold text-success fs-4" id="out-fee">₹0.00</div>
+                </div>
+              </div>
+
+              <button id="settle-payment-btn" class="btn btn-primary w-100 py-2.5">
+                <i class="fas fa-credit-card me-2"></i>Proceed to Payment Settle
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        initCheckoutFlow();
+        setupSearchRadioToggles();
+      }, 400);
+    });
+
+    async function initCheckoutFlow() {
+      try {
+        // Load occupied slots into dropdown for selector
+        const slotsResponse = await apiRequest('/slots?status=Occupied');
+        const slotSelect = document.getElementById('search-slot');
+        
+        if (slotsResponse.success) {
+          slotsResponse.data.forEach(slot => {
+            slotSelect.innerHTML += `<option value="${slot.id}">${slot.slot_number} (${slot.area_name})</option>`;
+          });
+        }
+
+        // Check if slot_id is passed as query parameter
+        const params = new URLSearchParams(window.location.search);
+        const querySlotId = params.get('slot_id');
+        if (querySlotId) {
+          // Switch search style to slot selector
+          document.getElementById('typeSlot').click();
+          slotSelect.value = querySlotId;
+          // Auto submit calculations!
+          document.getElementById('checkout-search-form').dispatchEvent(new Event('submit'));
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to retrieve occupied slots listings.', 'error');
+      }
+    }
+
+    function setupSearchRadioToggles() {
+      const radios = document.getElementsByName('searchType');
+      radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          // Hide all inputs
+          document.getElementById('input-plate-container').classList.add('d-none');
+          document.getElementById('input-slot-container').classList.add('d-none');
+          document.getElementById('input-record-container').classList.add('d-none');
+          
+          // Clear inputs
+          document.getElementById('search-plate').value = '';
+          document.getElementById('search-slot').value = '';
+          document.getElementById('search-record').value = '';
+
+          // Show selected
+          if (radio.value === 'plate') {
+            document.getElementById('input-plate-container').classList.remove('d-none');
+          } else if (radio.value === 'slot') {
+            document.getElementById('input-slot-container').classList.remove('d-none');
+          } else if (radio.value === 'record') {
+            document.getElementById('input-record-container').classList.remove('d-none');
+          }
+        });
+      });
+    }
+
+    // Submit handler: calculates fee
+    document.getElementById('checkout-search-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const searchType = document.querySelector('input[name="searchType"]:checked').value;
+      const plate = document.getElementById('search-plate').value;
+      const slot_id = document.getElementById('search-slot').value;
+      const record_id = document.getElementById('search-record').value;
+
+      const body = {};
+      if (searchType === 'plate') {
+        if (!plate) return showToast('Please enter a license plate.', 'warning');
+        body.license_plate = plate;
+      } else if (searchType === 'slot') {
+        if (!slot_id) return showToast('Please select a slot.', 'warning');
+        body.slot_id = parseInt(slot_id);
+      } else if (searchType === 'record') {
+        if (!record_id) return showToast('Please enter a record ID.', 'warning');
+        body.record_id = parseInt(record_id);
+      }
+
+      try {
+        // PUT /api/exit calculates charges and frees the slot on database
+        const response = await apiRequest('/exit', 'PUT', body);
+        
+        if (response.success && response.invoice) {
+          showToast(response.message || 'Exit computed successfully!', 'success');
+          renderExitResult(response.invoice);
+        } else {
+          throw new Error(response.message || 'Checkout failed');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Verification failed. Double check active states.', 'error');
+      }
+    });
+
+    function renderExitResult(invoice) {
+      document.getElementById('result-placeholder').classList.add('d-none');
+      const details = document.getElementById('result-details');
+      details.classList.remove('d-none');
+
+      document.getElementById('out-record-id').innerText = `#REC-${invoice.record_id}`;
+      document.getElementById('out-plate').innerText = invoice.license_plate;
+      document.getElementById('out-type').innerText = invoice.vehicle_type;
+      document.getElementById('out-location').innerText = `${invoice.area_name} / Bay ${invoice.slot_number}`;
+      
+      document.getElementById('out-entry').innerText = new Date(invoice.entry_time).toLocaleString();
+      document.getElementById('out-exit').innerText = new Date(invoice.exit_time).toLocaleString();
+      
+      // Compute displayable duration (e.g. "X hrs Y mins")
+      const totalMins = invoice.duration_minutes;
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      let durationStr = '';
+      if (hrs > 0) durationStr += `${hrs} hr${hrs > 1 ? 's' : ''} `;
+      durationStr += `${mins} min${mins > 1 ? 's' : ''}`;
+      
+      document.getElementById('out-duration').innerText = `${durationStr} (Billed: ${invoice.hours_charged} hr${invoice.hours_charged > 1 ? 's' : ''})`;
+      document.getElementById('out-rate').innerText = `₹${parseFloat(invoice.hourly_rate).toFixed(2)}/hr`;
+      document.getElementById('out-fee').innerText = `₹${parseFloat(invoice.calculated_fee).toFixed(2)}`;
+
+      // Settle payment action
+      const settleBtn = document.getElementById('settle-payment-btn');
+      settleBtn.onclick = () => {
+        window.location.href = `payments.html?record_id=${invoice.record_id}&amount=${invoice.calculated_fee}&plate=${invoice.license_plate}`;
+      };
+    }
+  </script>
+</body>
+</html>

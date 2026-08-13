@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parking Areas & Rates - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="glass-panel p-4">
+        
+        <!-- Header Controls -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h5 class="fw-bold mb-1">Parking Areas & Pricing Rules</h5>
+            <p class="text-secondary small mb-0">Admin control panel to manage lots locations, capacities, and base-hourly rates.</p>
+          </div>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#areaModal" onclick="openAddAreaModal()">
+            <i class="fas fa-plus me-2"></i>Create New Area Block
+          </button>
+        </div>
+
+        <!-- Table Row -->
+        <div class="table-responsive">
+          <div id="areas-table-loader"></div>
+          <table class="custom-table" id="areas-table">
+            <thead>
+              <tr>
+                <th>Area Block Name</th>
+                <th>Physical Location</th>
+                <th>Slot Allocation Capacity</th>
+                <th>Base Hourly Pricing</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="areas-table-body">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Area CRUD modal -->
+  <div class="modal fade" id="areaModal" tabindex="-1" aria-labelledby="areaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-panel text-white" style="border: 1px solid var(--border-color); background-color: var(--bg-secondary);">
+        <div class="modal-header border-bottom border-secondary border-opacity-15">
+          <h5 class="modal-title fw-bold" id="areaModalLabel">Configure Area Block</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="area-crud-form">
+          <input type="hidden" id="modal-area-id">
+          <div class="modal-body row g-3">
+            
+            <div class="col-12">
+              <label for="modal-area-name" class="form-label">Block Name <span class="text-danger">*</span></label>
+              <input type="text" id="modal-area-name" class="form-control" placeholder="e.g. Basement Floor A (General)" required>
+            </div>
+
+            <div class="col-12">
+              <label for="modal-area-location" class="form-label">Location / Sub-level <span class="text-danger">*</span></label>
+              <input type="text" id="modal-area-location" class="form-control" placeholder="e.g. Level B-1, North Entrance" required>
+            </div>
+
+            <div class="col-12">
+              <label for="modal-area-price" class="form-label">Base Hourly Pricing (₹) <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0 border-secondary border-opacity-25 text-secondary">₹</span>
+                <input type="number" step="0.01" id="modal-area-price" class="form-control border-start-0 border-secondary border-opacity-25" placeholder="e.g. 20.00" required>
+              </div>
+              <div class="text-secondary small mt-1" style="font-size:0.75rem;">Billing rounds up partial hours based on this rate.</div>
+            </div>
+
+          </div>
+          <div class="modal-footer border-top border-secondary border-opacity-15">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Area Block</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    let allAreas = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        loadAreasData();
+      }, 400);
+    });
+
+    async function loadAreasData() {
+      const loader = document.getElementById('areas-table-loader');
+      showLoader(loader);
+
+      try {
+        const response = await apiRequest('/areas');
+        if (response.success) {
+          allAreas = response.data;
+          renderAreasTable();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Connection error fetching areas.', 'error');
+      } finally {
+        loader.innerHTML = '';
+      }
+    }
+
+    function renderAreasTable() {
+      const body = document.getElementById('areas-table-body');
+      body.innerHTML = '';
+
+      if (allAreas.length === 0) {
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-4">No parking areas defined.</td></tr>';
+        return;
+      }
+
+      allAreas.forEach(area => {
+        body.innerHTML += `
+          <tr>
+            <td class="fw-bold text-white">${area.name}</td>
+            <td>${area.location}</td>
+            <td class="fw-semibold text-info"><i class="fas fa-parking me-1"></i> ${area.slot_count} slot${area.slot_count !== 1 ? 's' : ''}</td>
+            <td class="fw-bold text-success">₹${parseFloat(area.base_price).toFixed(2)}/hr</td>
+            <td class="text-end">
+              <button onclick="openEditAreaModal(${area.id})" class="btn btn-secondary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#areaModal" title="Edit block rates"><i class="fas fa-edit text-info"></i></button>
+              <button onclick="deleteArea(${area.id})" class="btn btn-secondary btn-sm" title="Remove block"><i class="fas fa-trash-alt text-danger"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Modal triggers
+    function openAddAreaModal() {
+      document.getElementById('areaModalLabel').innerText = 'Create New Area Block';
+      document.getElementById('area-crud-form').reset();
+      document.getElementById('modal-area-id').value = '';
+    }
+
+    function openEditAreaModal(id) {
+      document.getElementById('areaModalLabel').innerText = 'Configure Area Block';
+      const area = allAreas.find(a => a.id === id);
+      if (!area) return;
+
+      document.getElementById('modal-area-id').value = area.id;
+      document.getElementById('modal-area-name').value = area.name;
+      document.getElementById('modal-area-location').value = area.location;
+      document.getElementById('modal-area-price').value = area.base_price;
+    }
+
+    // Form Submit
+    document.getElementById('area-crud-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const id = document.getElementById('modal-area-id').value;
+      const name = document.getElementById('modal-area-name').value;
+      const location = document.getElementById('modal-area-location').value;
+      const base_price = parseFloat(document.getElementById('modal-area-price').value);
+
+      try {
+        let response;
+        if (id) {
+          response = await apiRequest(`/areas/${id}`, 'PUT', { name, location, base_price });
+        } else {
+          response = await apiRequest('/areas', 'POST', { name, location, base_price });
+        }
+
+        if (response.success) {
+          showToast(response.message || 'Block configuration saved!', 'success');
+          
+          const modalInstance = bootstrap.Modal.getInstance(document.getElementById('areaModal'));
+          modalInstance.hide();
+          
+          loadAreasData();
+        } else {
+          throw new Error(response.message || 'Action aborted');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'API rejected area updates.', 'error');
+      }
+    });
+
+    // Delete area
+    async function deleteArea(id) {
+      const area = allAreas.find(a => a.id === id);
+      if (!area) return;
+
+      if (confirm(`CRITICAL WARNING: Deleting area block "${area.name}" will permanently delete ALL parking slots and historical records assigned to it. Settle all active parking sessions first! Proceed?`)) {
+        try {
+          const response = await apiRequest(`/areas/${id}`, 'DELETE');
+          if (response.success) {
+            showToast(response.message || 'Area and cascading slots removed.', 'success');
+            loadAreasData();
+          } else {
+            throw new Error(response.message || 'Failed to remove');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || 'Area deletion failed.', 'error');
+        }
+      }
+    }
+  </script>
+</body>
+</html>

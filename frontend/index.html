@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking Pro - Redirecting...</title>
+  <script>
+    // Safeguard check-in
+    const token = localStorage.getItem('parking_jwt_token');
+    const user = localStorage.getItem('parking_user');
+    if (token && user) {
+      window.location.href = 'dashboard.html';
+    } else {
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body style="background-color: #0a0f1d; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
+  <div style="text-align: center;">
+    <h2>Smart Parking Management System</h2>
+    <p>Loading components...</p>
+  </div>
+</body>
+</html>

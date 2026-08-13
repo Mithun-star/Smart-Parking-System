@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Top navigation bar container -->
+    <div id="topbar-container"></div>
+
+    <!-- Main Container -->
+    <div class="container-fluid p-4">
+      
+      <!-- Metrics Row -->
+      <div class="row g-4 mb-4" id="stats-cards-row">
+        <!-- Stat Card: Available Slots -->
+        <div class="col-sm-6 col-xl-3">
+          <div class="glass-panel stat-card">
+            <div class="stat-icon color-success-bg">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-value text-success" id="stat-available-slots">--</div>
+            <div class="stat-label">Available Slots</div>
+          </div>
+        </div>
+
+        <!-- Stat Card: Occupied Slots -->
+        <div class="col-sm-6 col-xl-3">
+          <div class="glass-panel stat-card">
+            <div class="stat-icon color-warning-bg">
+              <i class="fas fa-car"></i>
+            </div>
+            <div class="stat-value text-warning" id="stat-occupied-slots">--</div>
+            <div class="stat-label">Occupied Slots</div>
+          </div>
+        </div>
+
+        <!-- Stat Card: Total Slots -->
+        <div class="col-sm-6 col-xl-3">
+          <div class="glass-panel stat-card">
+            <div class="stat-icon color-teal">
+              <i class="fas fa-parking"></i>
+            </div>
+            <div class="stat-value text-info" id="stat-total-slots">--</div>
+            <div class="stat-label">Total Capacity</div>
+          </div>
+        </div>
+
+        <!-- Stat Card: Today's Revenue -->
+        <div class="col-sm-6 col-xl-3">
+          <div class="glass-panel stat-card">
+            <div class="stat-icon color-purple">
+              <i class="fas fa-indian-rupee-sign"></i>
+            </div>
+            <div class="stat-value text-purple" id="stat-today-revenue">₹0</div>
+            <div class="stat-label">Today's Revenue</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Metrics Panel for Admins -->
+      <div class="row g-4 mb-4 d-none" id="admin-extended-row">
+        <div class="col-md-6 col-xl-3">
+          <div class="glass-panel p-3 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-secondary small">Total Registered Vehicles</div>
+              <h4 class="fw-bold mb-0" id="stat-total-vehicles">--</h4>
+            </div>
+            <i class="fas fa-folder fa-2x text-muted opacity-50"></i>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="glass-panel p-3 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-secondary small">Active Parking Sessions</div>
+              <h4 class="fw-bold mb-0" id="stat-active-sessions">--</h4>
+            </div>
+            <i class="fas fa-hourglass-half fa-2x text-muted opacity-50"></i>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="glass-panel p-3 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-secondary small">Monthly Revenue</div>
+              <h4 class="fw-bold mb-0 text-success" id="stat-monthly-revenue">₹0</h4>
+            </div>
+            <i class="fas fa-calendar-alt fa-2x text-success opacity-50"></i>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="glass-panel p-3 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-secondary small">Slots in Maintenance</div>
+              <h4 class="fw-bold mb-0 text-danger" id="stat-maintenance-slots">--</h4>
+            </div>
+            <i class="fas fa-tools fa-2x text-danger opacity-50"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Layout Panels Grid -->
+      <div class="row g-4">
+        
+        <!-- Live Slots Grid Representation -->
+        <div class="col-xl-8">
+          <div class="glass-panel p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h5 class="fw-bold mb-1">Live Parking Slots Map</h5>
+                <p class="text-secondary small mb-0">Select an Available slot to check in a vehicle immediately.</p>
+              </div>
+              <div class="d-flex gap-2">
+                <select id="dashboard-area-filter" class="form-select form-select-sm bg-dark border-secondary border-opacity-25" style="max-width: 200px;">
+                  <option value="">All Parking Areas</option>
+                </select>
+                <button onclick="loadDashboardData()" class="btn btn-secondary btn-sm"><i class="fas fa-sync-alt"></i></button>
+              </div>
+            </div>
+
+            <!-- Slots visual grid wrapper -->
+            <div id="slots-loader-container"></div>
+            <div class="slots-grid" id="slots-grid-container"></div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions Panel -->
+        <div class="col-xl-4">
+          <div class="glass-panel p-4 h-100">
+            <h5 class="fw-bold mb-3">Recent Transactions</h5>
+            <p class="text-secondary small mb-4">Last 5 payments processed through checkout.</p>
+            
+            <div id="transactions-loader-container"></div>
+            <div class="d-flex flex-column gap-3" id="recent-transactions-container">
+              <!-- Dynamically populated transaction feed -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

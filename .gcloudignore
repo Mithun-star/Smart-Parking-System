@@ -1,0 +1,7 @@
+backend/node_modules/
+.git/
+backend/.env
+backend/*.db
+backend/*.sqlite
+database/*.db
+database/*.sqlite

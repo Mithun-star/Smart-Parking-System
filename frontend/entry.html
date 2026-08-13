@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Check-In - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="row g-4">
+        
+        <!-- Check-in input Form Panel -->
+        <div class="col-lg-7" id="checkin-form-panel">
+          <div class="glass-panel p-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-sign-in-alt text-info me-2"></i>New Vehicle Entry</h5>
+            <p class="text-secondary small mb-4">Complete details to reserve a parking spot and generate a printable entry ticket.</p>
+
+            <form id="entry-checkin-form">
+              <div class="row g-3">
+                
+                <!-- License Plate Input -->
+                <div class="col-md-6">
+                  <label for="entry-plate" class="form-label">License Plate Number <span class="text-danger">*</span></label>
+                  <input type="text" id="entry-plate" class="form-control text-uppercase" placeholder="e.g. DL3CAN1234" required>
+                  <div class="text-secondary small mt-1" style="font-size:0.75rem;">Uppercase letters and numbers only.</div>
+                </div>
+
+                <!-- Vehicle Type Input -->
+                <div class="col-md-6">
+                  <label for="entry-type" class="form-label">Vehicle Category <span class="text-danger">*</span></label>
+                  <select id="entry-type" class="form-select" required>
+                    <option value="Four-Wheeler">Four-Wheeler (Car/SUV)</option>
+                    <option value="Two-Wheeler">Two-Wheeler (Motorcycle/Scooter)</option>
+                    <option value="Heavy-Vehicle">Heavy-Vehicle (Bus/Truck)</option>
+                  </select>
+                </div>
+
+                <!-- Area Dropdown selector -->
+                <div class="col-md-6">
+                  <label for="entry-area" class="form-label">Select Parking Block</label>
+                  <select id="entry-area" class="form-select">
+                    <option value="">Choose Area...</option>
+                  </select>
+                </div>
+
+                <!-- Slot Selector -->
+                <div class="col-md-6">
+                  <label for="entry-slot" class="form-label">Assign Parking Bay <span class="text-danger">*</span></label>
+                  <select id="entry-slot" class="form-select" required disabled>
+                    <option value="">Select Block First...</option>
+                  </select>
+                </div>
+
+                <!-- Owner Details (Optional Accordion) -->
+                <div class="col-12 mt-2">
+                  <div class="accordion border border-secondary border-opacity-10 rounded" id="ownerAccordion" style="background:transparent;">
+                    <div class="accordion-item bg-transparent text-white border-0">
+                      <h2 class="accordion-header bg-transparent">
+                        <button class="accordion-button bg-transparent text-white border-0 collapsed small shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOwner">
+                          <i class="fas fa-user-tag me-2 text-secondary"></i> Add Owner Information (Optional)
+                        </button>
+                      </h2>
+                      <div id="collapseOwner" class="accordion-collapse collapse" data-bs-parent="#ownerAccordion">
+                        <div class="accordion-body row g-3 pt-1 border-top border-secondary border-opacity-10">
+                          <div class="col-md-6">
+                            <label for="entry-owner-name" class="form-label">Owner Name</label>
+                            <input type="text" id="entry-owner-name" class="form-control" placeholder="e.g. John Doe">
+                          </div>
+                          <div class="col-md-6">
+                            <label for="entry-owner-phone" class="form-label">Owner Contact Phone</label>
+                            <input type="text" id="entry-owner-phone" class="form-control" placeholder="e.g. +91 9876543210">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="col-12 mt-4 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary px-4">
+                    <i class="fas fa-ticket-alt me-2"></i>Generate Ticket
+                  </button>
+                  <button type="button" onclick="resetForm()" class="btn btn-secondary">
+                    Clear Inputs
+                  </button>
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Ticket Receipt preview panel -->
+        <div class="col-lg-5">
+          <div class="glass-panel p-4 text-center h-100 d-flex flex-column justify-content-center" id="receipt-container-block">
+            <div id="receipt-placeholder">
+              <i class="fas fa-print fa-4x text-muted opacity-25 mb-3"></i>
+              <h5 class="text-secondary fw-semibold">No Ticket Generated</h5>
+              <p class="text-muted small">Fill out the entry form and click "Generate Ticket" to print.</p>
+            </div>
+            
+            <div id="receipt-print-wrapper" class="d-none w-100">
+              <!-- Printable Receipt Element -->
+              <div class="receipt-card text-start mb-4" id="entry-ticket-receipt">
+                <div class="receipt-header">
+                  <div class="receipt-title"><i class="fas fa-parking text-info me-2"></i>SmartPark</div>
+                  <div class="small text-secondary">Parking Check-In Ticket</div>
+                </div>
+                <div class="receipt-body">
+                  <div class="receipt-row">
+                    <span class="receipt-label">Ticket ID:</span>
+                    <span class="receipt-value" id="receipt-id">#0000</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">License Plate:</span>
+                    <span class="receipt-value" id="receipt-plate">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Category:</span>
+                    <span class="receipt-value" id="receipt-type">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Parking Zone:</span>
+                    <span class="receipt-value" id="receipt-area">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Parking Bay:</span>
+                    <span class="receipt-value text-info font-monospace fs-5" id="receipt-slot">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Entry Time:</span>
+                    <span class="receipt-value" id="receipt-time">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Hourly Pricing:</span>
+                    <span class="receipt-value" id="receipt-rate">₹20.00/hr</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Recorded By:</span>
+                    <span class="receipt-value text-muted" id="receipt-operator">--</span>
+                  </div>
+                </div>
+                
+                <!-- Barcode simulation -->
+                <div class="text-center mt-4">
+                  <div style="font-family: 'Libre Barcode 39', monospace; font-size: 2.5rem; letter-spacing: 2px;" class="opacity-50">||||| | ||||| | |||||</div>
+                  <div class="small text-muted font-monospace" id="receipt-barcode-number">PARK00000</div>
+                </div>
+                
+                <div class="receipt-footer">
+                  <p class="mb-1">Keep ticket safe. Fees accrue from entry time.</p>
+                  <p class="mb-0">Powered by SmartPark Pro Suite</p>
+                </div>
+              </div>
+              
+              <button onclick="printTicket()" class="btn btn-primary w-100 py-2.5">
+                <i class="fas fa-print me-2"></i>Print Parking Slip
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    let allSlots = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small timeout for token checker
+      setTimeout(() => {
+        initEntryFlow();
+      }, 400);
+    });
+
+    async function initEntryFlow() {
+      try {
+        // 1. Fetch areas
+        const areasResponse = await apiRequest('/areas');
+        const areaSelect = document.getElementById('entry-area');
+        
+        if (areasResponse.success) {
+          areasResponse.data.forEach(area => {
+            areaSelect.innerHTML += `<option value="${area.id}">${area.name} (Base: ₹${area.base_price}/hr)</option>`;
+          });
+        }
+
+        // 2. Fetch all slots
+        const slotsResponse = await apiRequest('/slots');
+        if (slotsResponse.success) {
+          allSlots = slotsResponse.data;
+        }
+
+        // Setup filter dependency
+        areaSelect.addEventListener('change', () => {
+          filterSlotsByArea(areaSelect.value);
+        });
+
+        // 3. Handle query params auto-select
+        const params = new URLSearchParams(window.location.search);
+        const querySlotId = params.get('slot_id');
+        if (querySlotId) {
+          const matchedSlot = allSlots.find(s => s.id == querySlotId);
+          if (matchedSlot) {
+            areaSelect.value = matchedSlot.area_id;
+            filterSlotsByArea(matchedSlot.area_id, querySlotId);
+            // Select vehicle category matching slot configuration
+            document.getElementById('entry-type').value = matchedSlot.type;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to initialize check-in form options.', 'error');
+      }
+    }
+
+    function filterSlotsByArea(areaId, selectSlotId = null) {
+      const slotSelect = document.getElementById('entry-slot');
+      if (!areaId) {
+        slotSelect.innerHTML = '<option value="">Select Block First...</option>';
+        slotSelect.disabled = true;
+        return;
+      }
+
+      slotSelect.innerHTML = '<option value="">Choose Slot...</option>';
+      slotSelect.disabled = false;
+
+      // Extract available slots in this area
+      const filtered = allSlots.filter(s => s.area_id == areaId && s.status === 'Available');
+
+      if (filtered.length === 0) {
+        slotSelect.innerHTML = '<option value="">No Available Slots in Block!</option>';
+        slotSelect.disabled = true;
+        showToast('Selected Parking Block is currently full.', 'warning');
+        return;
+      }
+
+      filtered.forEach(slot => {
+        slotSelect.innerHTML += `<option value="${slot.id}" data-type="${slot.type}">${slot.slot_number} (${slot.type})</option>`;
+      });
+
+      // Bind slot category changer
+      slotSelect.addEventListener('change', () => {
+        const selectedOption = slotSelect.options[slotSelect.selectedIndex];
+        const category = selectedOption.getAttribute('data-type');
+        if (category) {
+          document.getElementById('entry-type').value = category;
+        }
+      });
+
+      // Auto select slot from URL if matching
+      if (selectSlotId) {
+        slotSelect.value = selectSlotId;
+        // Trigger manual change to sync categories
+        slotSelect.dispatchEvent(new Event('change'));
+      }
+    }
+
+    // Submit handler
+    document.getElementById('entry-checkin-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const plate = document.getElementById('entry-plate').value;
+      const type = document.getElementById('entry-type').value;
+      const slot_id = document.getElementById('entry-slot').value;
+      const owner_name = document.getElementById('entry-owner-name').value;
+      const owner_phone = document.getElementById('entry-owner-phone').value;
+
+      try {
+        const response = await apiRequest('/entry', 'POST', {
+          license_plate: plate,
+          slot_id: parseInt(slot_id),
+          type,
+          owner_name,
+          owner_phone
+        });
+
+        if (response.success && response.receipt) {
+          showToast('Ticket generated successfully!', 'success');
+          renderReceipt(response.receipt);
+        } else {
+          throw new Error(response.message || 'Check-in failed');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Check-in transaction aborted.', 'error');
+      }
+    });
+
+    function renderReceipt(receipt) {
+      document.getElementById('receipt-placeholder').classList.add('d-none');
+      const wrapper = document.getElementById('receipt-print-wrapper');
+      wrapper.classList.remove('d-none');
+
+      document.getElementById('receipt-id').innerText = `#REC-${receipt.record_id}`;
+      document.getElementById('receipt-plate').innerText = receipt.license_plate;
+      document.getElementById('receipt-type').innerText = receipt.vehicle_type;
+      document.getElementById('receipt-area').innerText = receipt.area_name;
+      document.getElementById('receipt-slot').innerText = receipt.slot_number;
+      
+      const entryDate = new Date(receipt.entry_time);
+      document.getElementById('receipt-time').innerText = entryDate.toLocaleString();
+      document.getElementById('receipt-rate').innerText = `₹${parseFloat(receipt.base_price).toFixed(2)}/hr`;
+      document.getElementById('receipt-operator').innerText = receipt.recorded_by;
+      
+      document.getElementById('receipt-barcode-number').innerText = `PR-${receipt.record_id}-${receipt.license_plate}`;
+    }
+
+    function resetForm() {
+      document.getElementById('entry-checkin-form').reset();
+      document.getElementById('entry-slot').innerHTML = '<option value="">Select Block First...</option>';
+      document.getElementById('entry-slot').disabled = true;
+      document.getElementById('receipt-placeholder').classList.remove('d-none');
+      document.getElementById('receipt-print-wrapper').classList.add('d-none');
+    }
+
+    function printTicket() {
+      const printContents = document.getElementById('entry-ticket-receipt').outerHTML;
+      const originalContents = document.body.innerHTML;
+      
+      // Open clean iframe or print window
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>Print Slip</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+          <style>
+            body { background: white; color: black; padding: 20px; font-family: monospace; }
+            .receipt-card { max-width: 100%; border: 1px dashed black; padding: 20px; }
+            .receipt-header { text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; margin-bottom: 15px; }
+            .receipt-title { font-size: 1.5rem; font-weight: bold; }
+            .receipt-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${printContents}
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+      
+      // Reload slots dynamically to prevent double-reservation
+      initEntryFlow();
+      resetForm();
+    }
+  </script>
+</body>
+</html>

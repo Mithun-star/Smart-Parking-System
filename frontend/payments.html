@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Settlement - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="row g-4">
+        
+        <!-- Settle form panel -->
+        <div class="col-lg-6" id="payment-input-block">
+          <div class="glass-panel p-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-credit-card text-success me-2"></i>Process Billing & Settle</h5>
+            <p class="text-secondary small mb-4">Select the preferred payment method, enter transaction codes if applicable, and print the finalized Tax Invoice.</p>
+
+            <form id="settlement-payment-form">
+              <!-- Read-only record parameters -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Active Record ID</label>
+                  <input type="text" id="pay-record-id" class="form-control" readonly style="opacity:0.65;">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Vehicle Plate</label>
+                  <input type="text" id="pay-plate" class="form-control" readonly style="opacity:0.65;">
+                </div>
+              </div>
+
+              <!-- Total Payable (Highlighted) -->
+              <div class="glass-panel p-3 mb-4 d-flex justify-content-between align-items-center" style="background: rgba(0, 230, 118, 0.05); border-color: rgba(0, 230, 118, 0.15);">
+                <div>
+                  <span class="text-secondary small">Total Payable Amount:</span>
+                  <h4 class="fw-bold mb-0 text-success">₹<span id="pay-amount-lbl">0.00</span></h4>
+                </div>
+                <i class="fas fa-wallet fa-2x text-success"></i>
+              </div>
+
+              <!-- Payment Method Selection -->
+              <div class="mb-4">
+                <label class="form-label">Payment Channel <span class="text-danger">*</span></label>
+                <div class="row g-3">
+                  
+                  <div class="col-md-4">
+                    <input type="radio" class="btn-check" name="payChannel" id="payCash" value="Cash" checked>
+                    <label class="btn btn-secondary w-100 py-3 d-flex flex-column align-items-center gap-2 border border-secondary border-opacity-10 rounded shadow-none" for="payCash">
+                      <i class="fas fa-money-bill-wave fa-lg text-success"></i>
+                      <span>Cash</span>
+                    </label>
+                  </div>
+                  
+                  <div class="col-md-4">
+                    <input type="radio" class="btn-check" name="payChannel" id="payUPI" value="UPI">
+                    <label class="btn btn-secondary w-100 py-3 d-flex flex-column align-items-center gap-2 border border-secondary border-opacity-10 rounded shadow-none" for="payUPI">
+                      <i class="fas fa-mobile-alt fa-lg text-info"></i>
+                      <span>UPI / QR</span>
+                    </label>
+                  </div>
+                  
+                  <div class="col-md-4">
+                    <input type="radio" class="btn-check" name="payChannel" id="payCard" value="Card">
+                    <label class="btn btn-secondary w-100 py-3 d-flex flex-column align-items-center gap-2 border border-secondary border-opacity-10 rounded shadow-none" for="payCard">
+                      <i class="fas fa-credit-card fa-lg text-warning"></i>
+                      <span>Card Swipe</span>
+                    </label>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- UPI / Card Reference Input (Conditional) -->
+              <div class="mb-4 d-none" id="txn-reference-container">
+                <label for="pay-txn-id" class="form-label">Transaction Reference / Auth Code</label>
+                <input type="text" id="pay-txn-id" class="form-control" placeholder="e.g. Bank approval code, UPI Txn ID">
+                <div class="text-secondary small mt-1" style="font-size:0.75rem;">Leave empty to auto-generate a simulator txn reference.</div>
+              </div>
+
+              <!-- Settle button -->
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4 py-2.5 w-100">
+                  <i class="fas fa-check-circle me-2"></i>Record & Settle Payment
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+
+        <!-- Tax Invoice Preview -->
+        <div class="col-lg-6">
+          <div class="glass-panel p-4 text-center h-100 d-flex flex-column justify-content-center align-items-center" id="invoice-preview-block">
+            <div id="invoice-placeholder">
+              <i class="fas fa-print fa-4x text-muted opacity-25 mb-3"></i>
+              <h5 class="text-secondary fw-semibold">No Invoice Generated</h5>
+              <p class="text-muted small">Record payment details on the left and submit to view and print tax invoices.</p>
+            </div>
+
+            <div id="invoice-print-wrapper" class="d-none w-100 text-start">
+              <!-- Printable Invoice Card -->
+              <div class="receipt-card text-start mb-4" id="tax-invoice-receipt">
+                <div class="receipt-header">
+                  <div class="receipt-title"><i class="fas fa-parking text-info me-2"></i>SmartPark</div>
+                  <div class="small text-secondary">Tax Invoice / Receipt</div>
+                  <div class="small font-monospace text-muted mt-1" id="invoice-number">INV-000000</div>
+                </div>
+                <div class="receipt-body">
+                  <div class="receipt-row">
+                    <span class="receipt-label">Session ID:</span>
+                    <span class="receipt-value" id="inv-record-id">#0000</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Vehicle Plate:</span>
+                    <span class="receipt-value text-white fw-bold" id="inv-plate">--</span>
+                  </div>
+                  
+                  <div class="col-12"><hr class="border-secondary border-opacity-15 my-2"></div>
+
+                  <div class="receipt-row">
+                    <span class="receipt-label">Payment Method:</span>
+                    <span class="receipt-value" id="inv-channel">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Transaction ID:</span>
+                    <span class="receipt-value font-monospace" id="inv-txn-id">--</span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="receipt-label">Settled Date:</span>
+                    <span class="receipt-value" id="inv-date">--</span>
+                  </div>
+
+                  <div class="col-12"><hr class="border-secondary border-opacity-15 my-2"></div>
+
+                  <div class="receipt-row">
+                    <span class="receipt-label font-bold text-white fs-6">Amount Settled:</span>
+                    <span class="receipt-value text-success fw-bold fs-5" id="inv-amount">₹0.00</span>
+                  </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                  <div style="font-size: 0.75rem; color: #a18cd1; border: 1px solid rgba(161, 140, 209, 0.2); background: rgba(161, 140, 209, 0.05); padding: 8px; border-radius: 4px;">
+                    <i class="fas fa-shield-alt me-1"></i> Settle Confirmed • Secure JWT Gateway
+                  </div>
+                </div>
+
+                <div class="receipt-footer">
+                  <p class="mb-1">Thank you for parking with us!</p>
+                  <p class="mb-0">Please drive carefully.</p>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button onclick="printInvoice()" class="btn btn-primary w-100 py-2.5">
+                  <i class="fas fa-print me-2"></i>Print Tax Invoice
+                </button>
+                <a href="dashboard.html" class="btn btn-secondary w-50 py-2.5 text-center">
+                  Dashboard
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    let payableAmount = 0.00;
+    let recordId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        setupPaymentSettles();
+      }, 400);
+    });
+
+    function setupPaymentSettles() {
+      const params = new URLSearchParams(window.location.search);
+      recordId = params.get('record_id');
+      const amount = params.get('amount');
+      const plate = params.get('plate') || 'Unknown Vehicle';
+
+      if (!recordId || !amount) {
+        showToast('Invalid payment session references. Redirecting to Exit Checkout.', 'warning');
+        setTimeout(() => {
+          window.location.href = 'exit.html';
+        }, 1500);
+        return;
+      }
+
+      payableAmount = parseFloat(amount);
+      
+      // Inject details
+      document.getElementById('pay-record-id').value = `#REC-${recordId}`;
+      document.getElementById('pay-plate').value = plate;
+      document.getElementById('pay-amount-lbl').innerText = payableAmount.toFixed(2);
+
+      // Listen to channel switches to conditionally show transaction reference input
+      const channels = document.getElementsByName('payChannel');
+      const txnContainer = document.getElementById('txn-reference-container');
+
+      channels.forEach(ch => {
+        ch.addEventListener('change', () => {
+          if (ch.value === 'Cash') {
+            txnContainer.classList.add('d-none');
+            document.getElementById('pay-txn-id').value = '';
+          } else {
+            txnContainer.classList.remove('d-none');
+          }
+        });
+      });
+    }
+
+    // Settle Submit
+    document.getElementById('settlement-payment-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const channel = document.querySelector('input[name="payChannel"]:checked').value;
+      const refTxn = document.getElementById('pay-txn-id').value;
+
+      try {
+        const response = await apiRequest('/payment', 'POST', {
+          record_id: parseInt(recordId),
+          amount: payableAmount,
+          payment_method: channel,
+          transaction_id: refTxn || null
+        });
+
+        if (response.success && response.payment) {
+          showToast('Payment settled and saved!', 'success');
+          renderInvoice(response.payment);
+        } else {
+          throw new Error(response.message || 'Payment processing failed');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || 'Error occurred during payment records bookkeeping.', 'error');
+      }
+    });
+
+    function renderInvoice(payment) {
+      document.getElementById('invoice-placeholder').classList.add('d-none');
+      const wrapper = document.getElementById('invoice-print-wrapper');
+      wrapper.classList.remove('d-none');
+
+      document.getElementById('invoice-number').innerText = `INV-ST-${payment.id}-${payment.transaction_id.substring(0,6)}`;
+      document.getElementById('inv-record-id').innerText = `#REC-${payment.record_id}`;
+      document.getElementById('inv-plate').innerText = document.getElementById('pay-plate').value;
+      document.getElementById('inv-channel').innerText = payment.payment_method;
+      document.getElementById('inv-txn-id').innerText = payment.transaction_id;
+      document.getElementById('inv-date').innerText = new Date(payment.payment_date).toLocaleString();
+      document.getElementById('inv-amount').innerText = `₹${parseFloat(payment.amount).toFixed(2)}`;
+
+      // Hide input pane
+      document.getElementById('payment-input-block').style.opacity = '0.3';
+      document.getElementById('settlement-payment-form').querySelectorAll('input, button').forEach(el => el.disabled = true);
+    }
+
+    function printInvoice() {
+      const printContents = document.getElementById('tax-invoice-receipt').outerHTML;
+      
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>Print Invoice</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+            body { background: white; color: black; padding: 20px; font-family: monospace; }
+            .receipt-card { max-width: 100%; border: 1px dashed black; padding: 20px; }
+            .receipt-header { text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; margin-bottom: 15px; }
+            .receipt-title { font-size: 1.5rem; font-weight: bold; }
+            .receipt-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${printContents}
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+    }
+  </script>
+</body>
+</html>

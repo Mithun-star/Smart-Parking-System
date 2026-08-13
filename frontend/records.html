@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parking Logs - SmartPark Pro</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Dynamic Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Dynamic Topbar Navigation Container -->
+    <div id="topbar-container"></div>
+
+    <div class="container-fluid p-4">
+      <div class="glass-panel p-4">
+        
+        <!-- Header Controls -->
+        <div class="mb-4">
+          <h5 class="fw-bold mb-1">Parking History & Logs</h5>
+          <p class="text-secondary small">Comprehensive log tracking of vehicle entries, checkout timestamps, fees, and payments status.</p>
+        </div>
+
+        <!-- Filter controls -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Search License Plate</label>
+            <input type="text" id="filter-record-plate" class="form-control text-uppercase" placeholder="Search plate...">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Filter Session Status</label>
+            <select id="filter-record-status" class="form-select">
+              <option value="">All Sessions</option>
+              <option value="Active">Active check-ins</option>
+              <option value="Completed">Completed check-outs</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button onclick="loadRecordsData()" class="btn btn-secondary w-100 py-2">
+              <i class="fas fa-sync-alt me-2"></i>Sync Records Logs
+            </button>
+          </div>
+        </div>
+
+        <!-- Records Table -->
+        <div class="table-responsive">
+          <div id="records-table-loader"></div>
+          <table class="custom-table" id="records-table">
+            <thead>
+              <tr>
+                <th>Record ID</th>
+                <th>License Plate</th>
+                <th>Bay / Block</th>
+                <th>Entry Timestamp</th>
+                <th>Exit Timestamp</th>
+                <th>Calculated Fee</th>
+                <th>Session State</th>
+                <th class="text-end">Billing Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="custom-pagination">
+          <span class="text-secondary small me-auto" id="pagination-info">Showing -- to -- of -- entries</span>
+          <button class="page-btn" id="prev-page-btn" disabled><i class="fas fa-chevron-left"></i></button>
+          <div id="page-numbers-container" class="d-flex gap-1"></div>
+          <button class="page-btn" id="next-page-btn" disabled><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Global Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    let allRecords = [];
+    let filteredRecords = [];
+    let currentUser = {};
+
+    // Pagination
+    let currentPage = 1;
+    const entriesPerPage = 10;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        currentUser = JSON.parse(localStorage.getItem('parking_user') || '{}');
+        loadRecordsData();
+        setupFilters();
+      }, 400);
+    });
+
+    async function loadRecordsData() {
+      const loader = document.getElementById('records-table-loader');
+      showLoader(loader);
+
+      try {
+        const response = await apiRequest('/records');
+        if (response.success) {
+          allRecords = response.data;
+          applyFilters();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Connection error fetching parking records.', 'error');
+      } finally {
+        loader.innerHTML = '';
+      }
+    }
+
+    function setupFilters() {
+      const plateInput = document.getElementById('filter-record-plate');
+      const statusSelect = document.getElementById('filter-record-status');
+
+      const triggerFilter = () => {
+        currentPage = 1;
+        applyFilters();
+      };
+
+      plateInput.addEventListener('input', triggerFilter);
+      statusSelect.addEventListener('change', triggerFilter);
+
+      document.getElementById('prev-page-btn').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable();
+        }
+      });
+
+      document.getElementById('next-page-btn').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredRecords.length / entriesPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTable();
+        }
+      });
+    }
+
+    function applyFilters() {
+      const plate = document.getElementById('filter-record-plate').value.trim().toLowerCase();
+      const status = document.getElementById('filter-record-status').value;
+
+      filteredRecords = allRecords.filter(r => {
+        const matchPlate = r.license_plate.toLowerCase().includes(plate);
+        const matchStatus = !status || r.status === status;
+        
+        return matchPlate && matchStatus;
+      });
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const body = document.getElementById('records-table-body');
+      body.innerHTML = '';
+
+      if (filteredRecords.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" class="text-center text-secondary py-4">No parking session logs found on record.</td></tr>';
+        updatePagination(0, 0, 0);
+        return;
+      }
+
+      const totalItems = filteredRecords.length;
+      const totalPages = Math.ceil(totalItems / entriesPerPage);
+
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+
+      const startIndex = (currentPage - 1) * entriesPerPage;
+      const endIndex = Math.min(startIndex + entriesPerPage, totalItems);
+
+      const pageEntries = filteredRecords.slice(startIndex, endIndex);
+
+      pageEntries.forEach(r => {
+        const entryTime = new Date(r.entry_time).toLocaleString();
+        const exitTime = r.exit_time ? new Date(r.exit_time).toLocaleString() : '<span class="text-muted">--</span>';
+        
+        let statusBadge = '';
+        let billingActions = '';
+
+        if (r.status === 'Active') {
+          statusBadge = '<span class="badge-status badge-occupied">Active</span>';
+          billingActions = `
+            <a href="exit.html?slot_id=${r.slot_id}" class="btn btn-secondary btn-sm text-warning" title="Process checkout exit"><i class="fas fa-sign-out-alt me-1"></i> Checkout</a>
+          `;
+        } else {
+          statusBadge = '<span class="badge-status badge-available">Completed</span>';
+          
+          if (r.payment_id) {
+            // Settle confirmed
+            billingActions = `
+              <a href="payments.html?record_id=${r.record_id}&amount=${r.calculated_fee}&plate=${r.license_plate}" class="btn btn-secondary btn-sm text-success" title="Print Tax Invoice"><i class="fas fa-print me-1"></i> Invoice</a>
+            `;
+          } else {
+            // Completed exit but payment missing
+            billingActions = `
+              <a href="payments.html?record_id=${r.record_id}&amount=${r.calculated_fee}&plate=${r.license_plate}" class="btn btn-primary btn-sm" title="Record Payment Method"><i class="fas fa-wallet me-1"></i> Settle</a>
+            `;
+          }
+        }
+
+        body.innerHTML += `
+          <tr>
+            <td class="font-monospace fw-bold text-white">#REC-${r.record_id}</td>
+            <td class="fw-semibold text-white">${r.license_plate}</td>
+            <td>${r.slot_number} (${r.area_name})</td>
+            <td>${entryTime}</td>
+            <td>${exitTime}</td>
+            <td class="fw-bold text-white">₹${parseFloat(r.calculated_fee).toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">${billingActions}</td>
+          </tr>
+        `;
+      });
+
+      updatePagination(startIndex + 1, endIndex, totalItems);
+      renderPageNumbers(totalPages);
+    }
+
+    function updatePagination(start, end, total) {
+      document.getElementById('pagination-info').innerText = `Showing ${start} to ${end} of ${total} entries`;
+      document.getElementById('prev-page-btn').disabled = currentPage === 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= Math.ceil(total / entriesPerPage) || total === 0;
+    }
+
+    function renderPageNumbers(totalPages) {
+      const container = document.getElementById('page-numbers-container');
+      container.innerHTML = '';
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${currentPage === i ? 'active' : ''}`;
+        btn.innerText = i;
+        btn.addEventListener('click', () => {
+          currentPage = i;
+          renderTable();
+        });
+        container.appendChild(btn);
+      }
+    }
+  </script>
+</body>
+</html>
